@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
 #include "std_msgs/String.h"
 
 #include <rws2018_libs/team.h>
@@ -85,6 +86,17 @@ public:
 
     PrintReport();
   }
+  
+  void move()
+  {
+  	    static tf::TransformBroadcaster br; //cria transform_broadcaster, permite o envio
+    	tf::Transform transform; //cria transformacao
+    	transform.setOrigin( tf::Vector3(4, 4, 0.0)  ); //edita posicao
+    	tf::Quaternion q;
+    	q.setRPY(0, 0, M_PI/4); //edita rotacao
+    	transform.setRotation(q);   
+    	br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "rsilva")); //constroi e envia a mensagem
+  }
 
   void PrintReport()
   {
@@ -107,5 +119,12 @@ int main(int argc, char** argv)
     cout << "o ricardo esta na equipa certa" << endl;
   };
 
+  ros::Rate loop_rate(10);
+  while(ros::ok())
+  {
+    my_player.move();
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
   ros::spin();
 }
