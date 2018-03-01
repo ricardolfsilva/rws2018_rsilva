@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/ricardo/catkin_ws/devel/include",
+                    "/opt/ros/kinetic/include",
+                    "/home/ricardo/catkin_ws/src/beginner_tutorials/include",
+                    "/home/ricardo/catkin_ws/src/rws2018/rws2018_rsilva/player_rsilva/include",
+                    "/usr/include"
+                ]
+            },
+            "includePath": [
+                "/home/ricardo/catkin_ws/devel/include",
+                "/opt/ros/kinetic/include",
+                "/home/ricardo/catkin_ws/src/beginner_tutorials/include",
+                "/home/ricardo/catkin_ws/src/rws2018/rws2018_rsilva/player_rsilva/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 3
+}
