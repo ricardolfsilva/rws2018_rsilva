@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 #include <rws2018_libs/team.h>
 #include <tf/transform_broadcaster.h>
+#include <visualization_msgs/Marker.h>  //Messages on sreen
 
 #include <rws2018_msgs/MakeAPlay.h>
 
@@ -87,6 +88,7 @@ public:
   ros::NodeHandle n;
   boost::shared_ptr<ros::Subscriber> sub;
   tf::Transform transform;  // declare the transformation object (player's pose wrt world)
+  boost::shared_ptr<ros::Publisher> pub;
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
@@ -122,6 +124,10 @@ public:
     sub = boost::shared_ptr<ros::Subscriber>(new ros::Subscriber());
     *sub = n.subscribe("/make_a_play", 100, &MyPlayer::move, this);
 
+    // Message publisher
+    pub = boost::shared_ptr<ros::Publisher>(new ros::Publisher());
+    *pub = n.advertise<visualization_msgs::Marker>("/bocas", 0);
+
     struct timeval t1;
     gettimeofday(&t1, NULL);
     srand(t1.tv_usec);  // set the initial seed value
@@ -152,6 +158,24 @@ public:
     //----------- AI part ---------//
     double displacement = 6;  // computed with AI
     double delta_alpha = M_PI / 2;
+
+    //----------- /BOCAS part ---------//
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "rsilva";  // referencial name
+    marker.header.stamp = ros::Time();
+    marker.ns = "rsilva";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.z = 0.3;
+    marker.color.a = 1.0;  // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    marker.text = "nao percebo mesmo";
+    marker.lifetime = ros::Duration(2);
+    pub->publish(marker);
 
     //----------- CONSTRAINS part ---------//
     double displacement_max = msg->dog;
