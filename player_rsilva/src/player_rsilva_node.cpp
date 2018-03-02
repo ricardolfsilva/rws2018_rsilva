@@ -37,7 +37,7 @@ public:
         break;
       default:
         // cout << "wrong team index given. Cannot set team" << endl;
-        ROS_WARN("Wrong team index given. Cannot set team.");
+        ROS_ERROR("Wrong team index given. Cannot set team.");
         break;
     }
   }
@@ -54,7 +54,7 @@ public:
     {
       this->team = "no team";
       // cout << "cannot set team name to " << team << endl;
-      ROS_WARN("Cannot set team name to %s.", team.c_str());
+      ROS_ERROR("Cannot set team name to %s.", team.c_str());
       return 0;
     }
   }
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
   if (my_player.red_team->playerBelongsToTeam("rsilva"))
   {
     // cout << "o ricardo esta na equipa certa" << endl;
-    ROS_INFO("O Ricardo está na equipa certa.");
+    ROS_INFO("Ricardo is in the correct team.");
   };
 
   ros::Rate loop_rate(10);
