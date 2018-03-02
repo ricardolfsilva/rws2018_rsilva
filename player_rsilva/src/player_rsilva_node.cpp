@@ -238,18 +238,21 @@ public:
       }
     }
 
+    double displacement = 100;  // max velocity for now
+    double delta_alpha = 0;
     if (min_distance_hunters < min_distance_preys)
     {
       player_to_hunt = my_hunters->player_names[min_hunter];
+      delta_alpha = getAngleToPLayer(player_to_hunt) + M_PI / 2;
     }
     else
     {
       player_to_hunt = my_preys->player_names[min_prey];
+      delta_alpha = getAngleToPLayer(player_to_hunt);
     }
-
-    double displacement = 100;  // max velocity for now
-
-    double delta_alpha = getAngleToPLayer(player_to_hunt);
+    // tirar
+    player_to_hunt = my_preys->player_names[min_prey];
+    delta_alpha = getAngleToPLayer(player_to_hunt);
     if (isnan(delta_alpha))
       delta_alpha = 0;
 
