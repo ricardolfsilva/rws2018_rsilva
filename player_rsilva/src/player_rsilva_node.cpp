@@ -1,13 +1,15 @@
-#include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <vector>
 
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include "std_msgs/String.h"
+// Boost includes
+#include <boost/shared_ptr.hpp>
 
+// Ros includes
+#include <ros/ros.h>
 #include <rws2018_libs/team.h>
-#include <sstream>
+#include <tf/transform_broadcaster.h>
+
+#include <rws2018_msgs/MakeAPlay.h>
 
 using namespace std;
 
@@ -81,6 +83,10 @@ public:
   boost::shared_ptr<Team> my_preys;
   boost::shared_ptr<Team> my_hunters;
 
+  tf::TransformBroadcaster br;  // declare the broadcaster
+  ros::NodeHandle n;
+  boost::shared_ptr<ros::Subscriber> sub;
+
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
     red_team = boost::shared_ptr<Team>(new Team("red"));
@@ -111,14 +117,18 @@ public:
 
     setTeamName(argin_team);
 
+    // Message subscriver
+    sub = boost::shared_ptr<ros::Subscriber>(new ros::Subscriber());
+    *sub = n.subscribe("/make_a_play", 100, &MyPlayer::move, this);
+
     PrintReport();
   }
 
-  void move()
+  void move(const rws2018_msgs::MakeAPlay::ConstPtr& msg)
   {
-    static tf::TransformBroadcaster br;             // cria transform_broadcaster, permite o envio
-    tf::Transform transform;                        // cria transformacao
-    transform.setOrigin(tf::Vector3(-4, -4, 0.0));  // edita posicao
+    static float x = 0;
+    tf::Transform transform;                              // cria transformacao
+    transform.setOrigin(tf::Vector3(x += 0.01, 2, 0.0));  // edita posicao
     tf::Quaternion q;
     q.setRPY(0, 0, M_PI / 4);  // edita rotacao
     transform.setRotation(q);
@@ -127,6 +137,8 @@ public:
     ROS_INFO("My name is %s and I am moving.", name.c_str());
     // ROS_WARN("My name is %s and I am moving.", name.c_str());  //warnings
     // ROS_ERROR("My name is %s and I am moving.", name.c_str()); //errors
+    // Message
+    ROS_INFO("Moving to ");
   }
 
   void PrintReport()
@@ -152,12 +164,12 @@ int main(int argc, char** argv)
     ROS_INFO("Ricardo is in the correct team.");
   };
 
-  ros::Rate loop_rate(10);
+  /*ros::Rate loop_rate(10);
   while (ros::ok())
   {
     my_player.move();
     ros::spinOnce();
     loop_rate.sleep();
-  }
+  }*/
   ros::spin();
 }
