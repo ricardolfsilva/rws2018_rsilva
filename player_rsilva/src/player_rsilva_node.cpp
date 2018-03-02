@@ -86,9 +86,9 @@ public:
 
   tf::TransformBroadcaster br;  // declare the broadcaster
   ros::NodeHandle n;
-  boost::shared_ptr<ros::Subscriber> sub;
-  tf::Transform transform;  // declare the transformation object (player's pose wrt world)
-  boost::shared_ptr<ros::Publisher> pub;
+  boost::shared_ptr<ros::Subscriber> sub;  // declare the subscriver
+  tf::Transform transform;                 // declare the transformation object (player's pose wrt world)
+  boost::shared_ptr<ros::Publisher> pub;   // declare the publisher
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
