@@ -86,6 +86,7 @@ public:
   tf::TransformBroadcaster br;  // declare the broadcaster
   ros::NodeHandle n;
   boost::shared_ptr<ros::Subscriber> sub;
+  tf::Transform transform;  // declare the transformation object (player's pose wrt world)
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
@@ -121,17 +122,36 @@ public:
     sub = boost::shared_ptr<ros::Subscriber>(new ros::Subscriber());
     *sub = n.subscribe("/make_a_play", 100, &MyPlayer::move, this);
 
+    srand(4444 * time(NULL));  // set the initial seed value
+    double start_x = ((double)rand() / (double)RAND_MAX) * 10 - 5;
+    double start_y = ((double)rand() / (double)RAND_MAX) * 10 - 5;
+    printf("start_x=%f, start_y=%f\n", start_x, start_y);
+    warp(start_x, start_y, M_PI / 2);
+
     PrintReport();
+  }
+
+  void warp(double x, double y, double alfa)
+  {
+    transform.setOrigin(tf::Vector3(x, y, 0.0));
+    tf::Quaternion q;
+    q.setRPY(0, 0, alfa);
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "rsilva"));
+    ROS_INFO("Warping to x=%f y=%f a=%f", x, y, alfa);
   }
 
   void move(const rws2018_msgs::MakeAPlay::ConstPtr& msg)
   {
-    static float x = 0;
-    tf::Transform transform;                              // cria transformacao
-    transform.setOrigin(tf::Vector3(x += 0.01, 2, 0.0));  // edita posicao
+    double x = transform.getOrigin().x();
+    double y = transform.getOrigin().y();
+    double a = 0;
+
+    transform.setOrigin(tf::Vector3(x += 0.01, y, 0.0));
     tf::Quaternion q;
-    q.setRPY(0, 0, M_PI / 4);  // edita rotacao
+    q.setRPY(0, 0, a);
     transform.setRotation(q);
+
     br.sendTransform(
         tf::StampedTransform(transform, ros::Time::now(), "world", "rsilva"));  // constroi e envia a mensagem
     ROS_INFO("My name is %s and I am moving.", name.c_str());
