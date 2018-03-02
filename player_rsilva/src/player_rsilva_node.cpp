@@ -122,7 +122,9 @@ public:
     sub = boost::shared_ptr<ros::Subscriber>(new ros::Subscriber());
     *sub = n.subscribe("/make_a_play", 100, &MyPlayer::move, this);
 
-    srand(4444 * time(NULL));  // set the initial seed value
+    struct timeval t1;
+    gettimeofday(&t1, NULL);
+    srand(t1.tv_usec);  // set the initial seed value
     double start_x = ((double)rand() / (double)RAND_MAX) * 10 - 5;
     double start_y = ((double)rand() / (double)RAND_MAX) * 10 - 5;
     printf("start_x=%f, start_y=%f\n", start_x, start_y);
@@ -147,11 +149,26 @@ public:
     double y = transform.getOrigin().y();
     double a = 0;
 
-    transform.setOrigin(tf::Vector3(x += 0.01, y, 0.0));
-    tf::Quaternion q;
-    q.setRPY(0, 0, a);
-    transform.setRotation(q);
+    //----------- AI part ---------//
+    double displacement = 6;  // computed with AI
+    double delta_alpha = M_PI / 2;
 
+    //----------- CONSTRAINS part ---------//
+    double displacement_max = msg->dog;
+    double displacement_with_constrains;
+    displacement > displacement_max ? displacement = displacement_max : displacement = displacement;
+
+    double delta_alpha_max = M_PI / 30;
+    fabs(delta_alpha) > fabs(delta_alpha_max) ? delta_alpha = delta_alpha_max * delta_alpha / fabs(delta_alpha) :
+                                                delta_alpha = delta_alpha;
+
+    tf::Transform my_move_T;
+    my_move_T.setOrigin(tf::Vector3(displacement, 0.0, 0.0));
+    tf::Quaternion q1;
+    q1.setRPY(0, 0, delta_alpha);
+    my_move_T.setRotation(q1);
+
+    transform = transform * my_move_T;
     br.sendTransform(
         tf::StampedTransform(transform, ros::Time::now(), "world", "rsilva"));  // constroi e envia a mensagem
     ROS_INFO("My name is %s and I am moving.", name.c_str());
