@@ -206,7 +206,10 @@ public:
     double a = 0;
 
     //----------- AI part ---------//
-    double min_distance = 99999;
+    double min_distance_preys = 99999;
+    int min_prey = 0;
+    double min_distance_hunters = 99999;
+    int min_hunter = 0;
     string player_to_hunt = "no player";
     for (size_t i = 0; i < my_preys->player_names.size(); i++)
     {
@@ -214,12 +217,36 @@ public:
       if (isnan(dist))
       {
       }
-      else if (dist < min_distance)
+      else if (dist < min_distance_preys)
       {
-        min_distance = dist;
-        player_to_hunt = my_preys->player_names[i];
+        min_distance_preys = dist;
+        min_prey = i;
+        // player_to_hunt = my_preys->player_names[i];
       }
     }
+    for (size_t i = 0; i < my_hunters->player_names.size(); i++)
+    {
+      double dist = getDistanceToPlayer(my_hunters->player_names[i]);
+      if (isnan(dist))
+      {
+      }
+      else if (dist < min_distance_hunters)
+      {
+        min_distance_hunters = dist;
+        min_hunter = i;
+        // player_to_hunt = my_hunters->player_names[i];
+      }
+    }
+
+    if (min_distance_hunters < min_distance_preys)
+    {
+      player_to_hunt = my_hunters->player_names[min_hunter];
+    }
+    else
+    {
+      player_to_hunt = my_preys->player_names[min_prey];
+    }
+
     double displacement = 1;  // max velocity for now
 
     double delta_alpha = getAngleToPLayer(player_to_hunt);
@@ -237,8 +264,8 @@ public:
     marker.pose.orientation.w = 1.0;
     marker.scale.z = 0.3;
     marker.color.a = 1.0;  // Don't forget to set the alpha!
-    marker.color.r = 1.0;
-    marker.color.g = 0.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
     marker.color.b = 0.0;
     marker.text = "K20 " + player_to_hunt;
     marker.lifetime = ros::Duration(2);
