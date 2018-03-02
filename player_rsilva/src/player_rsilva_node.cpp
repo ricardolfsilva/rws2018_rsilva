@@ -15,9 +15,7 @@
 
 #define DEFAULT_TIME 0.05
 
-using namespace std;
 using namespace ros;
-using namespace tf;
 
 using namespace std;
 
@@ -162,20 +160,43 @@ public:
   {
     tf::StampedTransform t;  // The transform object
     // Time now = Time::now(); //get the time
-    Time now = Time(0);  // get the latest transform received
+    ros::Time now = Time(0);  // get the latest transform received
 
     try
     {
       listener.waitForTransform("rsilva", other_player, now, Duration(time_to_wait));
       listener.lookupTransform("rsilva", other_player, now, t);
     }
-    catch (TransformException& ex)
+    catch (tf::TransformException& ex)
     {
       ROS_ERROR("%s", ex.what());
       return NAN;
     }
 
     return atan2(t.getOrigin().y(), t.getOrigin().x());
+  }
+
+  // distance
+  float getDistanceToPlayer(string player_name, float time_to_wait = 0.1)
+  {
+    tf::StampedTransform trans;
+    ros::Time now = Time(0);  // get the latest transform received
+
+    try
+    {
+      listener.waitForTransform(name, player_name, now, Duration(time_to_wait));
+      listener.lookupTransform(name, player_name, now, trans);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      ros::Duration(0.01).sleep();
+      return 10000;
+    }
+
+    float x = trans.getOrigin().x();
+    float y = trans.getOrigin().y();
+    return sqrt(x * x + y * y);
   }
 
   void move(const rws2018_msgs::MakeAPlay::ConstPtr& msg)
@@ -185,9 +206,23 @@ public:
     double a = 0;
 
     //----------- AI part ---------//
-    double displacement = 6;  // computed with AI
+    double min_distance = 99999;
+    string player_to_hunt = "no player";
+    for (size_t i = 0; i < my_preys->player_names.size(); i++)
+    {
+      double dist = getDistanceToPlayer(my_preys->player_names[i]);
+      if (isnan(dist))
+      {
+      }
+      else if (dist < min_distance)
+      {
+        min_distance = dist;
+        player_to_hunt = my_preys->player_names[i];
+      }
+    }
+    double displacement = 1;  // max velocity for now
 
-    double delta_alpha = getAngleToPLayer("nsilva");
+    double delta_alpha = getAngleToPLayer(player_to_hunt);
     if (isnan(delta_alpha))
       delta_alpha = 0;
 
@@ -202,10 +237,10 @@ public:
     marker.pose.orientation.w = 1.0;
     marker.scale.z = 0.3;
     marker.color.a = 1.0;  // Don't forget to set the alpha!
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
     marker.color.b = 0.0;
-    marker.text = "nao percebo mesmo";
+    marker.text = "K20 " + player_to_hunt;
     marker.lifetime = ros::Duration(2);
     pub->publish(marker);
 
