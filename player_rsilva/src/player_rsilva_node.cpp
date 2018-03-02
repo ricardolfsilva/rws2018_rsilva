@@ -8,9 +8,16 @@
 #include <ros/ros.h>
 #include <rws2018_libs/team.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <visualization_msgs/Marker.h>  //Messages on sreen
 
 #include <rws2018_msgs/MakeAPlay.h>
+
+#define DEFAULT_TIME 0.05
+
+using namespace std;
+using namespace ros;
+using namespace tf;
 
 using namespace std;
 
@@ -89,6 +96,7 @@ public:
   boost::shared_ptr<ros::Subscriber> sub;  // declare the subscriver
   tf::Transform transform;                 // declare the transformation object (player's pose wrt world)
   boost::shared_ptr<ros::Publisher> pub;   // declare the publisher
+  tf::TransformListener listener;          // declare listener
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
@@ -149,6 +157,27 @@ public:
     ROS_INFO("Warping to x=%f y=%f a=%f", x, y, alfa);
   }
 
+  // angle
+  double getAngleToPLayer(string other_player, double time_to_wait = DEFAULT_TIME)
+  {
+    tf::StampedTransform t;  // The transform object
+    // Time now = Time::now(); //get the time
+    Time now = Time(0);  // get the latest transform received
+
+    try
+    {
+      listener.waitForTransform("rsilva", other_player, now, Duration(time_to_wait));
+      listener.lookupTransform("rsilva", other_player, now, t);
+    }
+    catch (TransformException& ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return NAN;
+    }
+
+    return atan2(t.getOrigin().y(), t.getOrigin().x());
+  }
+
   void move(const rws2018_msgs::MakeAPlay::ConstPtr& msg)
   {
     double x = transform.getOrigin().x();
@@ -157,7 +186,10 @@ public:
 
     //----------- AI part ---------//
     double displacement = 6;  // computed with AI
-    double delta_alpha = M_PI / 2;
+
+    double delta_alpha = getAngleToPLayer("nsilva");
+    if (isnan(delta_alpha))
+      delta_alpha = 0;
 
     //----------- /BOCAS part ---------//
     visualization_msgs::Marker marker;
