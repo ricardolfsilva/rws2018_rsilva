@@ -12,6 +12,7 @@
 #include <tf/transform_listener.h>
 #include <visualization_msgs/Marker.h>  //Messages on sreen
 
+#include <rws2018_msgs/GameQuery.h>
 #include <rws2018_msgs/MakeAPlay.h>
 
 #define DEFAULT_TIME 0.05
@@ -92,10 +93,11 @@ public:
 
   tf::TransformBroadcaster br;  // declare the broadcaster
   ros::NodeHandle n;
-  boost::shared_ptr<ros::Subscriber> sub;  // declare the subscriver
-  tf::Transform transform;                 // declare the transformation object (player's pose wrt world)
-  boost::shared_ptr<ros::Publisher> pub;   // declare the publisher
-  tf::TransformListener listener;          // declare listener
+  boost::shared_ptr<ros::Subscriber> sub;                // declare the subscriver
+  tf::Transform transform;                               // declare the transformation object (player's pose wrt world)
+  boost::shared_ptr<ros::Publisher> pub;                 // declare the publisher
+  tf::TransformListener listener;                        // declare listener
+  boost::shared_ptr<ros::ServiceServer> game_query_srv;  // add service
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
@@ -135,6 +137,9 @@ public:
     pub = boost::shared_ptr<ros::Publisher>(new ros::Publisher());
     *pub = n.advertise<visualization_msgs::Marker>("/bocas", 0);
 
+    game_query_srv = boost::shared_ptr<ros::ServiceServer>(new ros::ServiceServer());
+    *game_query_srv = n.advertiseService("/" + name + "/game_query", &MyPlayer::respondToGameQuery, this);
+
     // Starting point
     struct timeval t1;
     gettimeofday(&t1, NULL);
@@ -145,6 +150,14 @@ public:
     warp(start_x, start_y, M_PI / 2);
 
     PrintReport();
+  }
+
+  bool respondToGameQuery(rws2018_msgs::GameQuery::Request &req, rws2018_msgs::GameQuery::Response &res)
+  {
+    ROS_WARN("I am %s and I am responding to a service request!", name.c_str());
+
+    res.resposta = "nao percebo nada disto";
+    return true;
   }
 
   void warp(double x, double y, double alfa)
