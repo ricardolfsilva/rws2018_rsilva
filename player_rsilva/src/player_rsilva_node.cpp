@@ -156,7 +156,7 @@ public:
   {
     ROS_WARN("I am %s and I am responding to a service request!", name.c_str());
 
-    res.resposta = "nao percebo nada disto";
+    res.resposta = "onion";
     return true;
   }
 
