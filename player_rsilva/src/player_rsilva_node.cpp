@@ -158,13 +158,13 @@ public:
   }
 
   // Find distance to players
-  double getMaxDistance(const rws2018_msgs::MakeAPlay::ConstPtr &msg)
-  {
-    vector<double> dists = { msg->dog, msg->cat, msg->turtle, msg->cheetah };
-    std::sort(dists.begin(), dists.end());
-
-    return *(dists.rbegin());
-  }
+  // double getMaxDistance(const rws2018_msgs::MakeAPlay::ConstPtr &msg)
+  // {
+  // vector<double> dists = { msg->dog, msg->cat, msg->turtle, msg->cheetah };
+  // std::sort(dists.begin(), dists.end());
+  //
+  // return *(dists.rbegin());
+  // }
 
   // Function to get angle
   //----------------------
@@ -295,7 +295,7 @@ public:
 
     double displacement = 100;  // max velocity for now
     double delta_alpha = 0;
-    if ((min_distance_hunters < min_distance_preys * 0.7) && (min_distance_hunters < 2))
+    if ((min_distance_hunters < min_distance_preys * 0.7) && (min_distance_hunters < 1.7))
     {
       player_goal = player_to_escape;
       delta_alpha = -getAngleToPLayer(player_goal);
@@ -308,7 +308,7 @@ public:
 
     if (getLimits())
     {
-      delta_alpha = delta_alpha + M_PI;
+      delta_alpha = delta_alpha + M_PI / 1.5;
     }
 
     // tirar
@@ -340,7 +340,7 @@ public:
     //----------- CONSTRAINS part ---------//
     //-------------------------------------//
 
-    double displacement_max = getMaxDistance(msg);
+    double displacement_max = msg->turtle;
     double displacement_with_constrains;
     displacement > displacement_max ? displacement = displacement_max : displacement = displacement;
 
