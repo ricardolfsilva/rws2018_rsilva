@@ -8,6 +8,7 @@
 // Ros includes
 #include <ros/ros.h>
 #include <rws2018_libs/team.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/Marker.h>  //Messages on sreen
@@ -98,6 +99,9 @@ public:
   boost::shared_ptr<ros::Publisher> pub;                 // declare the publisher
   tf::TransformListener listener;                        // declare listener
   boost::shared_ptr<ros::ServiceServer> game_query_srv;  // add service
+  boost::shared_ptr<ros::Subscriber> sub_pcl;            // declare the subscriver
+
+  string my_point_cloud_guess;
 
   MyPlayer(string argin_name, string argin_team) : Player(argin_name)
   {
@@ -140,6 +144,10 @@ public:
     game_query_srv = boost::shared_ptr<ros::ServiceServer>(new ros::ServiceServer());
     *game_query_srv = n.advertiseService("/" + name + "/game_query", &MyPlayer::respondToGameQuery, this);
 
+    // PointCloud subscriver
+    sub_pcl = boost::shared_ptr<ros::Subscriber>(new ros::Subscriber());
+    *sub_pcl = n.subscribe("/object_point_cloud", 1, &MyPlayer::pclResponce, this);
+
     // Starting point
     struct timeval t1;
     gettimeofday(&t1, NULL);
@@ -156,7 +164,7 @@ public:
   {
     ROS_WARN("I am %s and I am responding to a service request!", name.c_str());
 
-    res.resposta = "onion";
+    res.resposta = my_point_cloud_guess;
     return true;
   }
 
@@ -279,6 +287,13 @@ public:
     }
 
     return false;
+  }
+
+  void pclResponce(const sensor_msgs::PointCloud2::ConstPtr &msg)
+  {
+    ROS_INFO("received a point cloud");
+
+    my_point_cloud_guess = "banana";
   }
 
   // Function to execute de movement
