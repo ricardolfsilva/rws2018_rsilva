@@ -157,15 +157,6 @@ public:
     ROS_INFO("Warping to x=%f y=%f a=%f", x, y, alfa);
   }
 
-  // Find distance to players
-  double getMaxDistance(const rws2018_msgs::MakeAPlay::ConstPtr &msg)
-  {
-    vector<double> dists = { msg->dog, msg->cat, msg->turtle, msg->cheetah };
-    std::sort(dists.begin(), dists.end());
-
-    return *(dists.rbegin() + 1);
-  }
-
   // Function to get angle
   //----------------------
   double getAngleToPLayer(string other_player, double time_to_wait = DEFAULT_TIME)
@@ -340,7 +331,7 @@ public:
     //----------- CONSTRAINS part ---------//
     //-------------------------------------//
 
-    double displacement_max = getMaxDistance(msg);
+    double displacement_max = msg->dog;
     double displacement_with_constrains;
     displacement > displacement_max ? displacement = displacement_max : displacement = displacement;
 
