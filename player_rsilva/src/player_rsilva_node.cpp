@@ -257,7 +257,7 @@ public:
       return 10000;
     }
 
-    double safe_dist = 7;
+    double safe_dist = 6.2;
     float x = trans.getOrigin().x();
     float y = trans.getOrigin().y();
     if (sqrt(x * x + y * y) > safe_dist)
@@ -308,7 +308,7 @@ public:
 
     if (getLimits())
     {
-      delta_alpha = delta_alpha + M_PI / 1.5;
+      delta_alpha = delta_alpha + M_PI / 1.2;
     }
 
     // tirar
