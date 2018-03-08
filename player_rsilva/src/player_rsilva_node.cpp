@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -134,6 +135,7 @@ public:
     pub = boost::shared_ptr<ros::Publisher>(new ros::Publisher());
     *pub = n.advertise<visualization_msgs::Marker>("/bocas", 0);
 
+    // Starting point
     struct timeval t1;
     gettimeofday(&t1, NULL);
     srand(t1.tv_usec);  // set the initial seed value
@@ -155,7 +157,17 @@ public:
     ROS_INFO("Warping to x=%f y=%f a=%f", x, y, alfa);
   }
 
-  // angle
+  // Find distance to players
+  double getMaxDistance(const rws2018_msgs::MakeAPlay::ConstPtr &msg)
+  {
+    vector<double> dists = { msg->dog, msg->cat, msg->turtle, msg->cheetah };
+    std::sort(dists.begin(), dists.end());
+
+    return *(dists.rbegin() + 1);
+  }
+
+  // Function to get angle
+  //----------------------
   double getAngleToPLayer(string other_player, double time_to_wait = DEFAULT_TIME)
   {
     tf::StampedTransform t;  // The transform object
@@ -167,7 +179,7 @@ public:
       listener.waitForTransform("rsilva", other_player, now, Duration(time_to_wait));
       listener.lookupTransform("rsilva", other_player, now, t);
     }
-    catch (tf::TransformException& ex)
+    catch (tf::TransformException &ex)
     {
       ROS_ERROR("%s", ex.what());
       return NAN;
@@ -176,8 +188,9 @@ public:
     return atan2(t.getOrigin().y(), t.getOrigin().x());
   }
 
-  // distance
-  float getDistanceToPlayer(string player_name, float time_to_wait = 0.1)
+  // Function to get distance
+  //-------------------------
+  float getDistanceToPlayer(string player_name, float time_to_wait = 0.05)
   {
     tf::StampedTransform trans;
     ros::Time now = Time(0);  // get the latest transform received
@@ -199,64 +212,113 @@ public:
     return sqrt(x * x + y * y);
   }
 
-  void move(const rws2018_msgs::MakeAPlay::ConstPtr& msg)
+  // Function to get closest player
+  //-------------------------------
+  string getClosestPlayer(vector<string> players_list)
+  {
+    string closest_player = "noplayer";
+    float min_dist = 99999;
+
+    for (size_t i = 0; i < players_list.size(); i++)
+    {
+      float d = getDistanceToPlayer(players_list[i]);
+      if (d < min_dist)
+      {
+        min_dist = d;
+        closest_player = players_list[i];
+      }
+    }
+
+    if (closest_player == "noplayer")
+    {
+      ROS_WARN("Couldn't find the closest player");
+      return NULL;
+    }
+
+    return closest_player;
+  }
+
+  // Function to test limits
+  //------------------------
+  bool getLimits()
+  {
+    tf::StampedTransform trans;
+    ros::Time now = Time(0);  // get the latest transform received
+
+    try
+    {
+      listener.waitForTransform("rsilva", "world", now, Duration(DEFAULT_TIME));
+      listener.lookupTransform("rsilva", "world", now, trans);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      ros::Duration(0.01).sleep();
+      return 10000;
+    }
+
+    double safe_dist = 7;
+    float x = trans.getOrigin().x();
+    float y = trans.getOrigin().y();
+    if (sqrt(x * x + y * y) > safe_dist)
+    {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Function to execute de movement
+  //--------------------------------
+  void move(const rws2018_msgs::MakeAPlay::ConstPtr &msg)
   {
     double x = transform.getOrigin().x();
     double y = transform.getOrigin().y();
     double a = 0;
 
+    //-----------------------------//
     //----------- AI part ---------//
-    double min_distance_preys = 99999;
+    //-----------------------------//
+    float min_distance_preys = 99999;
     int min_prey = 0;
-    double min_distance_hunters = 99999;
+    string player_to_escape = "moliveira";
+    float min_distance_hunters = 99999;
     int min_hunter = 0;
-    string player_to_hunt = "no player";
-    for (size_t i = 0; i < my_preys->player_names.size(); i++)
-    {
-      double dist = getDistanceToPlayer(my_preys->player_names[i]);
-      if (isnan(dist))
-      {
-      }
-      else if (dist < min_distance_preys)
-      {
-        min_distance_preys = dist;
-        min_prey = i;
-        // player_to_hunt = my_preys->player_names[i];
-      }
-    }
-    for (size_t i = 0; i < my_hunters->player_names.size(); i++)
-    {
-      double dist = getDistanceToPlayer(my_hunters->player_names[i]);
-      if (isnan(dist))
-      {
-      }
-      else if (dist < min_distance_hunters)
-      {
-        min_distance_hunters = dist;
-        min_hunter = i;
-        // player_to_hunt = my_hunters->player_names[i];
-      }
-    }
+    string player_to_hunt = "nsilva";
+    string player_goal = "nsilva";
+
+    player_to_hunt = getClosestPlayer(msg->blue_alive);
+    player_to_escape = getClosestPlayer(msg->red_alive);
+
+    min_distance_preys = getDistanceToPlayer(player_to_hunt);
+    min_distance_hunters = getDistanceToPlayer(player_to_escape);
 
     double displacement = 100;  // max velocity for now
     double delta_alpha = 0;
-    if (min_distance_hunters < min_distance_preys)
+    if ((min_distance_hunters < min_distance_preys * 0.7) && (min_distance_hunters < 2))
     {
-      player_to_hunt = my_hunters->player_names[min_hunter];
-      delta_alpha = getAngleToPLayer(player_to_hunt) + M_PI / 2;
+      player_goal = player_to_escape;
+      delta_alpha = -getAngleToPLayer(player_goal);
     }
     else
     {
-      player_to_hunt = my_preys->player_names[min_prey];
-      delta_alpha = getAngleToPLayer(player_to_hunt);
+      player_goal = player_to_hunt;
+      delta_alpha = getAngleToPLayer(player_goal);
     }
+
+    if (getLimits())
+    {
+      delta_alpha = delta_alpha + M_PI;
+    }
+
     // tirar
-    player_to_hunt = my_preys->player_names[min_prey];
-    delta_alpha = getAngleToPLayer(player_to_hunt);
+    // delta_alpha = getAngleToPLayer(player_to_hunt);
     if (isnan(delta_alpha))
       delta_alpha = 0;
 
-    //----------- /BOCAS part ---------//
+    //--------------------------------//
+    //----------- BOCAS part ---------//
+    //--------------------------------//
     visualization_msgs::Marker marker;
     marker.header.frame_id = "rsilva";  // referencial name
     marker.header.stamp = ros::Time();
@@ -274,8 +336,11 @@ public:
     marker.lifetime = ros::Duration(2);
     pub->publish(marker);
 
+    //-------------------------------------//
     //----------- CONSTRAINS part ---------//
-    double displacement_max = msg->cat;
+    //-------------------------------------//
+
+    double displacement_max = getMaxDistance(msg);
     double displacement_with_constrains;
     displacement > displacement_max ? displacement = displacement_max : displacement = displacement;
 
@@ -307,7 +372,7 @@ public:
 };
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   // Creating an instance of class Player
   ros::init(argc, argv, "rsilva");
